@@ -2,7 +2,7 @@ import { connect as _connect } from "mongoose";
 
 const connectDB = async () => {
   try {
-    await _connect("mongodb://localhost:27017/fishdoctor_admin", {
+    await _connect("mongodb://localhost:27017/user", {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     }).finally();

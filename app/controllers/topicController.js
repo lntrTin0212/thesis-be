@@ -5,7 +5,6 @@ import env from "dotenv"; // /api/v1/Color/getAll
 env.config();
 
 // localhost:3000/api/v1/topic/getAll
-
 export const getAllTopic = catchAsync(async (req, res, next) => {
   const allTopics = [];
   let finalResult = [];

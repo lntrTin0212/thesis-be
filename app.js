@@ -10,6 +10,7 @@ import connectDB from "./config/db/mongoose.js";
 import router from "./routes/detectRoutes.js";
 import colorRouter from "./routes/colorRoute.js";
 import topicRoute from "./routes/topicRoute.js";
+import userRouter from "./routes/userRoutes.js";
 
 const app = express();
 app.enable("trust proxy");
@@ -33,9 +34,10 @@ app.use(morgan("combined"));
 app.use("/api/v1/", router);
 app.use("/api/v1/color", colorRouter);
 app.use("/api/v1/topic", topicRoute);
+app.use("/api/v1/users", userRouter);
 
-// app.all("*", (req, res, next) => {
-//   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-// });
+app.all("*", (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
 
 export default app;
