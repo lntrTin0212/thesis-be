@@ -26,29 +26,30 @@ export const getAllTopic = catchAsync(async (req, res, next) => {
       });
     });
 
-  allTopics.map(async (x, y) => {
-    await graphDBEndpoint
-      .query(
-        `
-                  PREFIX : <${process.env.PREFIX}>
-                  PREFIX owl: <http://www.w3.org/2002/07/owl#>
-                  PREFIX rdf: <${process.env.RDF}>
-                  PREFIX rdfs: <${process.env.RDFS}>
-                  select ?subject ?predicate ?object where { 
-                    ?subject rdf:type :${x}
-                  }
-            `
-      )
-      .then((data) => {
-        finalResult.push({
-          topicName: x,
-          vocabName: data.records.length,
-        });
-      });
-  });
+  // allTopics.map(async (x, y) => {
+  //   await graphDBEndpoint
+  //     .query(
+  //       `
+  //                 PREFIX : <${process.env.PREFIX}>
+  //                 PREFIX owl: <http://www.w3.org/2002/07/owl#>
+  //                 PREFIX rdf: <${process.env.RDF}>
+  //                 PREFIX rdfs: <${process.env.RDFS}>
+  //                 select ?subject ?predicate ?object where {
+  //                   ?subject rdf:type :${x}
+  //                 }
+  //           `
+  //     )
+  //     .then((data) => {
+  //       finalResult.push({
+  //         topicName: x,
+  //         vocabName: data.records.length,
+  //       });
+  //     });
+  // });
 
   res.status(200).json({
-    finalResult,
+    allTopics,
+    topicQuantity: allTopics.length,
   });
 });
 
@@ -131,6 +132,7 @@ export const getTopicDetail = catchAsync(async (req, res, next) => {
         `
     )
     .then((data) => {
+      console.log(data);
       let filterData = [];
       data.records.map((x, y) => {
         filterData.push({

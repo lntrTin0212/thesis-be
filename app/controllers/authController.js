@@ -64,10 +64,14 @@ export const login = catchAsync(async (req, res, next) => {
 });
 
 export const logout = (req, res) => {
-  res.cookie("jwt", "loggedout", {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
-  });
+  // res.cookie("jwt", "loggedout", {
+  //   expires: new Date(Date.now() + 10 * 1000),
+  //   httpOnly: true,
+  // });
+  jwt.des;
+  console.log("before logout", req.headers.authorization);
+  req.headers.authorization = null;
+  console.log("before logout", req.headers.authorization);
   res.status(200).json({ status: "success" });
 };
 
@@ -79,9 +83,10 @@ export const protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookies.jwt) {
-    token = req.cookies.jwt;
   }
+  // else if (req.cookies.jwt) {
+  //   token = req.cookies.jwt;
+  // }
 
   if (!token) {
     return next(
@@ -162,6 +167,7 @@ export const restrictTo = (...roles) => {
 
 export const forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email
+  console.log(req.body.email);
   const user = await User.findOne({ email: req.body.email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
