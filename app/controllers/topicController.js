@@ -25,7 +25,7 @@ export const getTopics = catchAsync(async (req, res, next) => {
         allTopics.push(x.subject.substr(process.env.PREFIX.length));
       });
     });
-
+    // console.log(allTopics)
   res.status(200).json({
     allTopics,
     topicQuantity: allTopics.length,
@@ -75,30 +75,32 @@ export const getTopicList = catchAsync(async (req, res, next) => {
         `
       )
       .then((data) => {
-        let filterData = [];
+        let filterData = {};
         data.records.map((x, y) => {
-          filterData.push({
-            predicate: x.predicate.substr(process.env.PREFIX.length),
-            value: x.value,
-          });
+          filterData = {
+            ...filterData,
+            [x.predicate.substr(process.env.PREFIX.length)]: x.value,
+          }
+        
         });
-
+        let word = queryResult[i]
         finalResult.push({
-          word: queryResult[i],
-          properties: filterData,
-        });
+
+            word,
+            ...filterData
+        }
+        );
       });
   }
 
-  res.status(200).json({
-    data: finalResult,
-  });
+  res.status(200).json(finalResult);
 });
 
 // localhost:3000/api/v1/topic/getTopicDetail/:name/:vocab
 export const getTopicDetail = catchAsync(async (req, res, next) => {
-  const finalResult = [];
+  let finalResult = [];
   const suggestArr = [];
+  let filterData = {}
 
   const vocab = req.params["vocab"];
   const name = req.params["name"];
@@ -116,17 +118,18 @@ export const getTopicDetail = catchAsync(async (req, res, next) => {
         `
     )
     .then((data) => {
-      let filterData = [];
       data.records.map((x, y) => {
-        filterData.push({
-          predicate: x.predicate.substr(process.env.PREFIX.length),
-          value: x.value,
-        });
+        filterData = {
+          ...filterData,
+          [x.predicate.substr(process.env.PREFIX.length)]: x.value,
+        }
       });
-
-      finalResult.push({
-        Properties: filterData,
-      });
+      finalResult = filterData
+      finalResult = {
+        ...finalResult,
+        vocab
+      }
+        
     });
   await graphDBEndpoint
     .query(
@@ -141,16 +144,23 @@ export const getTopicDetail = catchAsync(async (req, res, next) => {
     )
     .then((data) => {
       data.records.map((x, y) => {
+        if(y > 2) {
+          return 
+        }
         if (x.subject.substr(process.env.PREFIX.length) === vocab.trim()) {
         } else {
           suggestArr.push(x.subject.substr(process.env.PREFIX.length));
         }
       });
     });
-  res.status(200).json({
-    data: finalResult,
-    suggestWord: suggestArr,
-  });
+    finalResult ={
+      ...finalResult,
+      suggestArr
+    }
+    // finalResult.push()
+  res.status(200).json(
+    finalResult
+  );
 });
 
 // localhost:3000/api/v1/topic/getSubClass/:topic
