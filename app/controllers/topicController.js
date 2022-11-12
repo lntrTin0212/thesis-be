@@ -4,8 +4,8 @@ import graphDBEndpoint from "../../config/db/index.js";
 import env from "dotenv"; // /api/v1/Color/getAll
 env.config();
 
-// localhost:3000/api/v1/topic/getAll
-export const getAllTopic = catchAsync(async (req, res, next) => {
+// localhost:3000/api/v1/topic/getTopics
+export const getTopics = catchAsync(async (req, res, next) => {
   const allTopics = [];
   let finalResult = [];
   await graphDBEndpoint
@@ -26,27 +26,6 @@ export const getAllTopic = catchAsync(async (req, res, next) => {
       });
     });
 
-  // allTopics.map(async (x, y) => {
-  //   await graphDBEndpoint
-  //     .query(
-  //       `
-  //                 PREFIX : <${process.env.PREFIX}>
-  //                 PREFIX owl: <http://www.w3.org/2002/07/owl#>
-  //                 PREFIX rdf: <${process.env.RDF}>
-  //                 PREFIX rdfs: <${process.env.RDFS}>
-  //                 select ?subject ?predicate ?object where {
-  //                   ?subject rdf:type :${x}
-  //                 }
-  //           `
-  //     )
-  //     .then((data) => {
-  //       finalResult.push({
-  //         topicName: x,
-  //         vocabName: data.records.length,
-  //       });
-  //     });
-  // });
-
   res.status(200).json({
     allTopics,
     topicQuantity: allTopics.length,
@@ -66,11 +45,16 @@ const topic = async (topicName) => {
   );
 };
 
-// localhost:3000/api/v1/topic/getTopicList/:name
+// const topicList = (topicName) => {
+
+// }
+
+// localhost:3000/api/v1/topic/getTopicList/:topic
 export const getTopicList = catchAsync(async (req, res, next) => {
-  const topicName = req.params["name"];
+  const topicName = req.params["topic"];
   const queryResult = [];
   const finalResult = [];
+
   await topic(topicName).then((data) => {
     data.records.map((x, y) => {
       queryResult.push(x.subject.substr(process.env.PREFIX.length));
@@ -81,14 +65,14 @@ export const getTopicList = catchAsync(async (req, res, next) => {
     await graphDBEndpoint
       .query(
         `
-        PREFIX : <${process.env.PREFIX}>
-        PREFIX owl: <http://www.w3.org/2002/07/owl#>
-        PREFIX rdf: <${process.env.RDF}>
-        select ?predicate ?value where { 
-        :${queryResult[i]} ?predicate ?value .
-        MINUS{ ?y rdf:type ?value }
-        }
-      `
+          PREFIX : <${process.env.PREFIX}>
+          PREFIX owl: <http://www.w3.org/2002/07/owl#>
+          PREFIX rdf: <${process.env.RDF}>
+          select ?predicate ?value where { 
+          :${queryResult[i]} ?predicate ?value .
+          MINUS{ ?y rdf:type ?value }
+          }
+        `
       )
       .then((data) => {
         let filterData = [];
@@ -111,7 +95,7 @@ export const getTopicList = catchAsync(async (req, res, next) => {
   });
 });
 
-// localhost:3000/api/v1/topic/getTopicDetail/:vocab
+// localhost:3000/api/v1/topic/getTopicDetail/:name/:vocab
 export const getTopicDetail = catchAsync(async (req, res, next) => {
   const finalResult = [];
   const suggestArr = [];
@@ -132,7 +116,6 @@ export const getTopicDetail = catchAsync(async (req, res, next) => {
         `
     )
     .then((data) => {
-      console.log(data);
       let filterData = [];
       data.records.map((x, y) => {
         filterData.push({
@@ -167,5 +150,71 @@ export const getTopicDetail = catchAsync(async (req, res, next) => {
   res.status(200).json({
     data: finalResult,
     suggestWord: suggestArr,
+  });
+});
+
+// localhost:3000/api/v1/topic/getSubClass/:topic
+export const getSubClass = catchAsync(async (req, res, next) => {
+  const topicName = req.params["topic"];
+  let subclassList = [];
+  let vocabsOfSubClass = [];
+  let nonSubclass = [];
+  await graphDBEndpoint
+    .query(
+      `
+        PREFIX : <${process.env.PREFIX}>
+        PREFIX rdf: <${process.env.RDF}>
+        PREFIX rdfs: <${process.env.RDFS}>
+        select ?subClass  where { 
+          ?subClass rdfs:subClassOf :${topicName}
+        }
+        `
+    )
+    .then(async (data) => {
+      if (data.total === 0) {
+        await topic(topicName).then((data) => {
+          data.records.map((x, y) => {
+            nonSubclass.push(x.subject.substr(process.env.PREFIX.length));
+          });
+        });
+        return res.status(200).json({
+          subClassOf: topicName,
+          data: nonSubclass,
+        });
+      }
+      data.records.map((x, y) => {
+        subclassList.push({
+          subClassName: x.subClass.substr(process.env.PREFIX.length),
+        });
+      });
+    });
+  for (let i = 0; i < subclassList.length; i++) {
+    await graphDBEndpoint
+      .query(
+        `
+            PREFIX : <${process.env.PREFIX}>
+            PREFIX rdf: <${process.env.RDF}>
+            PREFIX rdfs: <${process.env.RDFS}>
+            select ?subject ?predicate ?object  where { 
+              ?subject rdf:type :${subclassList[i].subClassName} .
+            }
+          `
+      )
+      .then((x) => {
+        x.records.map((data) => {
+          vocabsOfSubClass.push(data.subject.substr(process.env.PREFIX.length));
+        });
+
+        subclassList[i] = {
+          ...subclassList[i],
+          vocabs: vocabsOfSubClass,
+        };
+        vocabsOfSubClass = [];
+      });
+  }
+
+  res.status(200).json({
+    subClassOf: topicName,
+    data: subclassList,
   });
 });

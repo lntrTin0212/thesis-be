@@ -1,11 +1,16 @@
 import { Router } from "express";
 import {
-  getAllTopic,
   getTopicList,
   getTopicDetail,
+  getSubClass,
+  getTopics,
 } from "../app/controllers/topicController.js";
+
 const router = Router();
-router.route("/getAll").get(getAllTopic);
-router.route("/getTopicList/:name").get(getTopicList);
+
+router.route("/getTopics").get(getTopics);
+router.route("/getTopicList/:topic").get(getTopicList);
+router.route("/getSubClass/:topic").get(getSubClass);
 router.route("/getTopicDetail/:name/:vocab").get(getTopicDetail);
+
 export default router;
