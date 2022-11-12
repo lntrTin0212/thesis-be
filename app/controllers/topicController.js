@@ -6,8 +6,8 @@ env.config();
 
 // localhost:3000/api/v1/topic/getTopics
 export const getTopics = catchAsync(async (req, res, next) => {
+  // let finalResult = [];
   const allTopics = [];
-  let finalResult = [];
   await graphDBEndpoint
     .query(
       `
@@ -75,24 +75,22 @@ export const getTopicList = catchAsync(async (req, res, next) => {
         `
       )
       .then((data) => {
-        let filterData = [];
+        let filterData = {};
         data.records.map((x, y) => {
-          filterData.push({
-            predicate: x.predicate.substr(process.env.PREFIX.length),
-            value: x.value,
-          });
+          filterData = {
+            ...filterData,
+            [x.predicate.substr(process.env.PREFIX.length)]: x.value,
+          };
         });
-
+        let word = queryResult[i];
         finalResult.push({
-          word: queryResult[i],
-          properties: filterData,
+          word,
+          ...filterData,
         });
       });
   }
 
-  res.status(200).json({
-    data: finalResult,
-  });
+  res.status(200).json(finalResult);
 });
 
 // localhost:3000/api/v1/topic/getTopicDetail/:name/:vocab
@@ -204,7 +202,6 @@ export const getSubClass = catchAsync(async (req, res, next) => {
         x.records.map((data) => {
           vocabsOfSubClass.push(data.subject.substr(process.env.PREFIX.length));
         });
-
         subclassList[i] = {
           ...subclassList[i],
           vocabs: vocabsOfSubClass,
@@ -217,4 +214,40 @@ export const getSubClass = catchAsync(async (req, res, next) => {
     subClassOf: topicName,
     data: subclassList,
   });
+});
+
+// topicName:color
+//
+export const createNew = catchAsync(async (req, res, next) => {
+  console.log(req.body);
+  await graphDBEndpoint.query(
+    `
+        PREFIX : <${process.env.PREFIX}>
+        PREFIX BEaudio: <${process.env.BE_AUDIO}>
+        PREFIX AEaudio: <${process.env.BE_AUDIO}>
+        PREFIX BEpronun: <${process.env.BE_PRONUM}>
+        PREFIX AEpronun: <${process.env.AE_PRONUM}> 
+        PREFIX meaning: <${process.env.MEANING}>
+        PREFIX image: <${process.env.IMG}>
+        PREFIX rdf: <${process.env.RDF}>
+        PREFIX topicName: <http://www.semanticweb.org/khmquan/ontologies/2022/10/EnglishApp#>
+        PREFIX vocabulary: <http://www.semanticweb.org/khmquan/ontologies/2022/10/EnglishApp#Vocabulary>
+        
+        INSERT DATA {
+            :Gold AEaudio: 'https://dictionary.cambridge.org/vi/media/english/us_pron/g/gol/gold_/gold.mp3' .
+            :Gold BEaudio: 'https://dictionary.cambridge.org/vi/media/english/uk_pron/u/ukg/ukgod/ukwgodpa017.mp3' .
+            :Gold BEpronun: '/ɡəʊld/' .
+            :Gold AEpronun: '/ɡoʊld/' .
+            :Gold meaning: 'màu gold' .
+            :Gold image: 'https://htmlcolorcodes.com/assets/images/colors/gold-color-solid-background-1920x1080.png' .
+            :Gold rdf:type topicName:Color .
+            :Gold rdf:type vocabulary: .
+            :Gold rdf:type 'http://www.w3.org/2002/07/owl#NamedIndividual'
+        }
+          `
+  );
+  res.status(200).json({
+    data: req.body,
+  });
+  s;
 });
