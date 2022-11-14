@@ -257,6 +257,7 @@ export const createNew = catchAsync(async (req, res, next) => {
   });
 });
 
+// localhost:3000/api/v1/topic/vocabs
 export const getVocabsAndMeaning = catchAsync(async (req, res, next) => {
   let finalResult = [];
   let totalWord;
