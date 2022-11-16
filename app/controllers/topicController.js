@@ -259,7 +259,7 @@ export const createNew = catchAsync(async (req, res, next) => {
 
 // localhost:3000/api/v1/topic/vocabs
 export const getVocabsAndMeaning = catchAsync(async (req, res, next) => {
-  let finalResult = [];
+  let vocabArr = [];
   let totalWord;
   await graphDBEndpoint
     .query(
@@ -275,14 +275,36 @@ export const getVocabsAndMeaning = catchAsync(async (req, res, next) => {
     .then((data) => {
       totalWord = data.total;
       data.records.map((x) => {
-        finalResult.push({
+        vocabArr.push({
           word: x.subject.substr(process.env.PREFIX.length),
           meaning: x.meaning,
         });
       });
     });
-  finalResult.push({
+
+  for (let i = 0; i < vocabArr.length; i++) {
+    await graphDBEndpoint
+      .query(
+        `
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX : <http://www.semanticweb.org/khmquan/ontologies/2022/10/EnglishApp#>
+        SELECT ?topic from <http://www.ontotext.com/explicit> where { 
+              :${vocabArr[i].word} rdf:type ?topic
+            FILTER (?topic != <http://www.w3.org/2002/07/owl#NamedIndividual>)
+            FILTER (?topic != <http://www.w3.org/2002/07/owl#Class>)
+
+      }
+      `
+      )
+      .then((data) => {
+        vocabArr[i] = {
+          ...vocabArr[i],
+          topicName: data.records[0].topic.substr(process.env.PREFIX.length),
+        };
+      });
+  }
+  vocabArr.push({
     total: totalWord,
   });
-  res.status(200).json(finalResult);
+  res.status(200).json(vocabArr);
 });
